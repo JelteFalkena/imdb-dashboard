@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
     const endYear = parseInt(searchParams.get('endYear') || '2026', 10);
 
     const connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: 'process.env.DB_PASSWORD', // Zet op '' als je lokaal geen wachtwoord hebt
-      database: 'imdb_project',
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE || 'imdb_project',
     });
 
     // 2. Bouw de basis-query (veilig tegen SQL-injecties met '?')

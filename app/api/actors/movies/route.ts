@@ -11,10 +11,10 @@ export async function GET(request: NextRequest) {
     }
 
     const connection = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: 'process.env.DB_PASSWORD',
-      database: 'imdb_project',
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_DATABASE || 'imdb_project',
     });
 
     const query = `
