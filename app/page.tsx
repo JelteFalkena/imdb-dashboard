@@ -1174,7 +1174,7 @@ export default function CanaryDashboard() {
 
       {/* Popups (Context en Video) */}
       {popupContent && (
-        <div ref={popupRef} className="absolute w-[340px] bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 p-6 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ top: popupPosition.y, left: popupPosition.x }}>
+        <div ref={popupRef} className="absolute w-[340px] bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200 p-6 shadow-2xl z-[60] animate-in fade-in zoom-in-95 duration-200" style={{ top: popupPosition.y, left: popupPosition.x }}>
            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
              <div className="flex items-center gap-3.5 truncate">
                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center font-extrabold text-lg shadow-inner shrink-0 border overflow-hidden ${popupContent.type === 'director' ? 'bg-gradient-to-br from-indigo-900 to-slate-900 text-white border-indigo-950' : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-indigo-500'}`}>
