@@ -457,7 +457,13 @@ export default function CanaryDashboard() {
 
   const huidigeRegisseurKey = selectedGenre || "Algemeen"
   const geselecteerdeRegisseur = REGISSEUR_SUGGESTIES[huidigeRegisseurKey] || REGISSEUR_SUGGESTIES["Algemeen"]
-  
+
+  const geselecteerdeActeur = React.useMemo<ActorInfo | null>(() => {
+    const source = selectedGenre ? (genreActors ?? []) : allActors
+    if (source.length === 0) return null
+    return [...source].sort((a, b) => b.score - a.score)[0]
+  }, [selectedGenre, genreActors, allActors])
+
   const getoondeActeurs = React.useMemo(() => {
     const query = actorSearchQuery.toLowerCase().trim()
 
@@ -751,6 +757,22 @@ export default function CanaryDashboard() {
                   </h4>
                 </div>
               </button>
+
+              {geselecteerdeActeur && (
+                <button onClick={(e) => openContextPopup(e, "actor", geselecteerdeActeur)} className="flex items-center gap-3 p-2.5 pr-5 bg-white/80 border border-indigo-200/60 rounded-2xl shadow-sm text-left hover:border-indigo-400 hover:shadow-md transition-all duration-300 group w-max shrink-0">
+                  <div className="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center font-bold font-mono shadow-md group-hover:scale-105 group-hover:rotate-3 transition-transform overflow-hidden">
+                    <TmdbAvatar name={geselecteerdeActeur.name} initials={geselecteerdeActeur.initials} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider flex items-center gap-1 mb-0.5">
+                      <Star size={12} className="text-indigo-500" /> Geschikte acteur
+                    </p>
+                    <h4 className="text-sm font-extrabold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                      {geselecteerdeActeur.name}
+                    </h4>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
         )}
