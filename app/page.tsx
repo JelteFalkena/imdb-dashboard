@@ -201,6 +201,7 @@ export default function CanaryDashboard() {
   const [showMoreActors, setShowMoreActors] = React.useState(false)
   const [moreActorsPosition, setMoreActorsPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const moreActorsRef = React.useRef<HTMLDivElement>(null)
+  const [selectedSuitableActorId, setSelectedSuitableActorId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -389,6 +390,7 @@ export default function CanaryDashboard() {
     setPopupContent(null)
     setShowMoreActors(false)
     setSelectedActorFilter(null)
+    setSelectedSuitableActorId(null)
   }
 
   const toggleSort = (field: SortField) => {
@@ -495,7 +497,13 @@ export default function CanaryDashboard() {
     return [...source].sort((a, b) => b.score - a.score)
   }, [selectedGenre, genreActors, allActors])
 
-  const geselecteerdeActeur = rankedActeursVoorContext[0] ?? null
+  const geselecteerdeActeur = React.useMemo<ActorInfo | null>(() => {
+    if (selectedSuitableActorId) {
+      const gekozen = rankedActeursVoorContext.find(a => a.id === selectedSuitableActorId)
+      if (gekozen) return gekozen
+    }
+    return rankedActeursVoorContext[0] ?? null
+  }, [rankedActeursVoorContext, selectedSuitableActorId])
 
   const getoondeActeurs = React.useMemo(() => {
     const query = actorSearchQuery.toLowerCase().trim()
@@ -1252,23 +1260,28 @@ export default function CanaryDashboard() {
             Top acteurs{selectedGenre ? ` · ${selectedGenre}` : ""}
           </p>
           <div className="space-y-1 max-h-[280px] overflow-y-auto">
-            {rankedActeursVoorContext.slice(0, 8).map((acteur, i) => (
-              <button
-                key={acteur.id}
-                onClick={(e) => {
-                  setShowMoreActors(false)
-                  openContextPopup(e, "actor", acteur)
-                }}
-                className="w-full flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-indigo-50 transition-colors text-left group"
-              >
-                <span className="text-[10px] font-bold text-slate-400 font-mono w-4 text-right shrink-0">{i + 1}</span>
-                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
-                  <TmdbAvatar name={acteur.name} initials={acteur.initials} />
-                </div>
-                <span className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors flex-1">{acteur.name}</span>
-                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shrink-0">{acteur.score}</span>
-              </button>
-            ))}
+            {rankedActeursVoorContext.slice(0, 8).map((acteur, i) => {
+              const isGekozen = geselecteerdeActeur?.id === acteur.id
+              return (
+                <button
+                  key={acteur.id}
+                  onClick={(e) => {
+                    setSelectedSuitableActorId(acteur.id)
+                    setShowMoreActors(false)
+                    openContextPopup(e, "actor", acteur)
+                  }}
+                  className={`w-full flex items-center gap-2.5 p-1.5 rounded-xl transition-colors text-left group ${isGekozen ? "bg-indigo-50" : "hover:bg-indigo-50"}`}
+                >
+                  <span className="text-[10px] font-bold text-slate-400 font-mono w-4 text-right shrink-0">{i + 1}</span>
+                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+                    <TmdbAvatar name={acteur.name} initials={acteur.initials} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors flex-1">{acteur.name}</span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shrink-0">{acteur.score}</span>
+                  {isGekozen && <Check size={14} className="text-indigo-600 shrink-0" />}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
