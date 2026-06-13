@@ -782,32 +782,38 @@ export default function CanaryDashboard() {
       {/* 2. Rechter Canvas voor Inhoud */}
       <section className="flex-1 p-6 lg:p-8 space-y-8 overflow-y-auto max-w-full w-full z-10 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
         
-        {selectedGenreSummary && (
+        {(selectedGenreSummary || searchedSuitableActor) && (
           <div className="bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 border border-indigo-200/80 p-6 rounded-3xl shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-xs font-bold text-indigo-700/80 uppercase font-mono tracking-wider flex items-center gap-1.5">
-                  <Layers size={14} className="text-indigo-500" /> Genre
-                </p>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">{selectedGenreSummary.name}</h2>
-                <span className="text-[11px] text-slate-500 font-medium mt-2 flex items-center gap-2">
-                  <span>Overzicht van prestaties & statistieken</span>
-                </span>
+            {selectedGenreSummary && (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="text-xs font-bold text-indigo-700/80 uppercase font-mono tracking-wider flex items-center gap-1.5">
+                    <Layers size={14} className="text-indigo-500" /> Genre
+                  </p>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">{selectedGenreSummary.name}</h2>
+                  <span className="text-[11px] text-slate-500 font-medium mt-2 flex items-center gap-2">
+                    <span>Overzicht van prestaties & statistieken</span>
+                  </span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
-              <div className="bg-white/90 border border-indigo-100 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
-                <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wide">Gem. winst</p>
-                <p className="text-2xl font-extrabold text-indigo-600 font-mono mt-0.5">€{selectedGenreSummary.avgWinstM}M</p>
-              </div>
-              <div className="bg-white/90 border border-slate-200 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
-                <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wide">Gem. duur</p>
-                <p className="text-2xl font-extrabold text-slate-800 font-mono mt-0.5">
-                  {selectedGenreSummary.avgDuration != null ? `${selectedGenreSummary.avgDuration} min` : "—"}
-                </p>
-              </div>
-              
+              {selectedGenreSummary && (
+                <>
+                  <div className="bg-white/90 border border-indigo-100 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wide">Gem. winst</p>
+                    <p className="text-2xl font-extrabold text-indigo-600 font-mono mt-0.5">€{selectedGenreSummary.avgWinstM}M</p>
+                  </div>
+                  <div className="bg-white/90 border border-slate-200 rounded-2xl px-5 py-3 shadow-sm min-w-[120px]">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wide">Gem. duur</p>
+                    <p className="text-2xl font-extrabold text-slate-800 font-mono mt-0.5">
+                      {selectedGenreSummary.avgDuration != null ? `${selectedGenreSummary.avgDuration} min` : "—"}
+                    </p>
+                  </div>
+                </>
+              )}
+
               <button onClick={(e) => openContextPopup(e, "director", geselecteerdeRegisseur)} className="flex items-center gap-3 p-2.5 pr-5 bg-white/80 border border-indigo-200/60 rounded-2xl shadow-sm text-left hover:border-indigo-400 hover:shadow-md transition-all duration-300 group w-max shrink-0">
                 <div className="w-10 h-10 bg-indigo-950 text-white rounded-xl flex items-center justify-center font-bold font-mono shadow-md group-hover:scale-105 group-hover:rotate-3 transition-transform overflow-hidden">
                   <TmdbAvatar name={geselecteerdeRegisseur.name} initials={geselecteerdeRegisseur.initials} />
