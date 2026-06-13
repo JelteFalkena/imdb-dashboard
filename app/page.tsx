@@ -5,7 +5,7 @@ import Image from "next/image"
 import {
   Calendar, Layers, DollarSign, Clapperboard, Clock,
   UserCheck, Users, Search, X, Check, Plus, ChevronDown, ChevronUp, Star, ExternalLink,
-  ArrowUp, ArrowDown, ArrowUpDown, TrendingUp, Info
+  ArrowUp, ArrowDown, ArrowUpDown, TrendingUp, Info, Pencil
 } from "lucide-react"
 
 import { 
@@ -817,10 +817,10 @@ export default function CanaryDashboard() {
                   {rankedActeursVoorContext.length > 1 && (
                     <button
                       onClick={toggleMoreActors}
-                      title="Meer geschikte acteurs"
+                      title="Wijzig geschikte acteur"
                       className={`p-1.5 rounded-lg border transition-colors shrink-0 ${showMoreActors ? "bg-indigo-950 border-indigo-950 text-white" : "bg-slate-50 border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300"}`}
                     >
-                      {showMoreActors ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      <Pencil size={14} />
                     </button>
                   )}
                 </div>
@@ -1263,23 +1263,33 @@ export default function CanaryDashboard() {
             {rankedActeursVoorContext.slice(0, 8).map((acteur, i) => {
               const isGekozen = geselecteerdeActeur?.id === acteur.id
               return (
-                <button
+                <div
                   key={acteur.id}
-                  onClick={(e) => {
-                    setSelectedSuitableActorId(acteur.id)
-                    setShowMoreActors(false)
-                    openContextPopup(e, "actor", acteur)
-                  }}
-                  className={`w-full flex items-center gap-2.5 p-1.5 rounded-xl transition-colors text-left group ${isGekozen ? "bg-indigo-50" : "hover:bg-indigo-50"}`}
+                  className={`w-full flex items-center gap-2.5 p-1.5 rounded-xl transition-colors group ${isGekozen ? "bg-indigo-50" : "hover:bg-indigo-50"}`}
                 >
-                  <span className="text-[10px] font-bold text-slate-400 font-mono w-4 text-right shrink-0">{i + 1}</span>
-                  <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
-                    <TmdbAvatar name={acteur.name} initials={acteur.initials} />
-                  </div>
-                  <span className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors flex-1">{acteur.name}</span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shrink-0">{acteur.score}</span>
-                  {isGekozen && <Check size={14} className="text-indigo-600 shrink-0" />}
-                </button>
+                  <button
+                    onClick={() => setSelectedSuitableActorId(acteur.id)}
+                    title="Maak geschikte acteur"
+                    className="flex items-center gap-2.5 flex-1 min-w-0 text-left"
+                  >
+                    <span className="text-[10px] font-bold text-slate-400 font-mono w-4 text-right shrink-0">{i + 1}</span>
+                    <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+                      <TmdbAvatar name={acteur.name} initials={acteur.initials} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors flex-1">{acteur.name}</span>
+                    {isGekozen && <Check size={14} className="text-indigo-600 shrink-0" />}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      setShowMoreActors(false)
+                      openContextPopup(e, "actor", acteur)
+                    }}
+                    title="Meer info over deze acteur"
+                    className="p-1 rounded-md text-emerald-700 bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors shrink-0"
+                  >
+                    <ChevronDown size={14} />
+                  </button>
+                </div>
               )
             })}
           </div>
