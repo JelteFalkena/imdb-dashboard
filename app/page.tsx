@@ -198,6 +198,10 @@ export default function CanaryDashboard() {
   const [popupPosition, setPopupPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const popupRef = React.useRef<HTMLDivElement>(null)
 
+  const [showMoreActors, setShowMoreActors] = React.useState(false)
+  const [moreActorsPosition, setMoreActorsPosition] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const moreActorsRef = React.useRef<HTMLDivElement>(null)
+
   React.useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       try {
@@ -349,6 +353,33 @@ export default function CanaryDashboard() {
     return () => document.removeEventListener("click", handleOutsideClick)
   }, [popupContent])
 
+  React.useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (moreActorsRef.current && !moreActorsRef.current.contains(event.target as Node)) {
+        setShowMoreActors(false)
+      }
+    }
+    if (showMoreActors) document.addEventListener("click", handleOutsideClick)
+    return () => document.removeEventListener("click", handleOutsideClick)
+  }, [showMoreActors])
+
+  const toggleMoreActors = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.nativeEvent.stopImmediatePropagation()
+
+    if (showMoreActors) {
+      setShowMoreActors(false)
+      return
+    }
+
+    const screenWidth = window.innerWidth
+    let targetX = e.pageX + 10
+    if (targetX + 280 > screenWidth) targetX = screenWidth - 300
+    setMoreActorsPosition({ x: targetX, y: e.pageY + 10 })
+    setPopupContent(null)
+    setShowMoreActors(true)
+  }
+
   const handleGenreChange = (genre: string | null) => {
     setBudgetRange(prev => [prev[0], 1_000_000_000])
     setBudgetCeiling(1_000_000_000)
@@ -356,6 +387,7 @@ export default function CanaryDashboard() {
     setSelectedGenre(genre)
     setActorSearchQuery("")
     setPopupContent(null)
+    setShowMoreActors(false)
     setSelectedActorFilter(null)
   }
 
@@ -458,11 +490,12 @@ export default function CanaryDashboard() {
   const huidigeRegisseurKey = selectedGenre || "Algemeen"
   const geselecteerdeRegisseur = REGISSEUR_SUGGESTIES[huidigeRegisseurKey] || REGISSEUR_SUGGESTIES["Algemeen"]
 
-  const geselecteerdeActeur = React.useMemo<ActorInfo | null>(() => {
+  const rankedActeursVoorContext = React.useMemo<ActorInfo[]>(() => {
     const source = selectedGenre ? (genreActors ?? []) : allActors
-    if (source.length === 0) return null
-    return [...source].sort((a, b) => b.score - a.score)[0]
+    return [...source].sort((a, b) => b.score - a.score)
   }, [selectedGenre, genreActors, allActors])
+
+  const geselecteerdeActeur = rankedActeursVoorContext[0] ?? null
 
   const getoondeActeurs = React.useMemo(() => {
     const query = actorSearchQuery.toLowerCase().trim()
@@ -759,19 +792,30 @@ export default function CanaryDashboard() {
               </button>
 
               {geselecteerdeActeur && (
-                <button onClick={(e) => openContextPopup(e, "actor", geselecteerdeActeur)} className="flex items-center gap-3 p-2.5 pr-5 bg-white/80 border border-indigo-200/60 rounded-2xl shadow-sm text-left hover:border-indigo-400 hover:shadow-md transition-all duration-300 group w-max shrink-0">
-                  <div className="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center font-bold font-mono shadow-md group-hover:scale-105 group-hover:rotate-3 transition-transform overflow-hidden">
-                    <TmdbAvatar name={geselecteerdeActeur.name} initials={geselecteerdeActeur.initials} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider flex items-center gap-1 mb-0.5">
-                      <Star size={12} className="text-indigo-500" /> Geschikte acteur
-                    </p>
-                    <h4 className="text-sm font-extrabold text-slate-800 group-hover:text-indigo-600 transition-colors">
-                      {geselecteerdeActeur.name}
-                    </h4>
-                  </div>
-                </button>
+                <div className="flex items-center gap-1 p-2.5 pr-3 bg-white/80 border border-indigo-200/60 rounded-2xl shadow-sm hover:border-indigo-400 hover:shadow-md transition-all duration-300 group w-max shrink-0">
+                  <button onClick={(e) => openContextPopup(e, "actor", geselecteerdeActeur)} className="flex items-center gap-3 pr-2 text-left">
+                    <div className="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center font-bold font-mono shadow-md group-hover:scale-105 group-hover:rotate-3 transition-transform overflow-hidden">
+                      <TmdbAvatar name={geselecteerdeActeur.name} initials={geselecteerdeActeur.initials} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider flex items-center gap-1 mb-0.5">
+                        <Star size={12} className="text-indigo-500" /> Geschikte acteur
+                      </p>
+                      <h4 className="text-sm font-extrabold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        {geselecteerdeActeur.name}
+                      </h4>
+                    </div>
+                  </button>
+                  {rankedActeursVoorContext.length > 1 && (
+                    <button
+                      onClick={toggleMoreActors}
+                      title="Meer geschikte acteurs"
+                      className={`p-1.5 rounded-lg border transition-colors shrink-0 ${showMoreActors ? "bg-indigo-950 border-indigo-950 text-white" : "bg-slate-50 border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-300"}`}
+                    >
+                      {showMoreActors ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -1179,7 +1223,7 @@ export default function CanaryDashboard() {
                  <p className="text-[11px] text-slate-400 italic">Geen producties gevonden.</p>
                )}
                
-               <button 
+               <button
                  onClick={() => {
                    setSelectedActorFilter(
                      allActors.find(a => a.id === popupContent.id) || {
@@ -1199,6 +1243,33 @@ export default function CanaryDashboard() {
                </button>
              </div>
            )}
+        </div>
+      )}
+
+      {showMoreActors && (
+        <div ref={moreActorsRef} className="absolute w-[260px] bg-white/95 backdrop-blur-xl rounded-2xl border border-slate-200 p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200" style={{ top: moreActorsPosition.y, left: moreActorsPosition.x }}>
+          <p className="text-[10px] font-bold text-slate-400 uppercase font-mono tracking-wider px-1 pb-2 mb-1 border-b border-slate-100">
+            Top acteurs{selectedGenre ? ` · ${selectedGenre}` : ""}
+          </p>
+          <div className="space-y-1 max-h-[280px] overflow-y-auto">
+            {rankedActeursVoorContext.slice(0, 8).map((acteur, i) => (
+              <button
+                key={acteur.id}
+                onClick={(e) => {
+                  setShowMoreActors(false)
+                  openContextPopup(e, "actor", acteur)
+                }}
+                className="w-full flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-indigo-50 transition-colors text-left group"
+              >
+                <span className="text-[10px] font-bold text-slate-400 font-mono w-4 text-right shrink-0">{i + 1}</span>
+                <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 overflow-hidden group-hover:scale-105 transition-transform">
+                  <TmdbAvatar name={acteur.name} initials={acteur.initials} />
+                </div>
+                <span className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors flex-1">{acteur.name}</span>
+                <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 shrink-0">{acteur.score}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
