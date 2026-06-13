@@ -4,16 +4,15 @@ import { Inter, JetBrains_Mono } from "next/font/google"
 import Image from "next/image"
 import {
   Calendar, Layers, DollarSign, Clapperboard, Clock,
-  UserCheck, Users, Search, X, Check, Plus, ChevronDown, ChevronUp, Star, ExternalLink,
+  UserCheck, Search, X, Check, ChevronDown, ChevronUp, Star, ExternalLink,
   ArrowUp, ArrowDown, ArrowUpDown, TrendingUp, Info, Pencil
 } from "lucide-react"
 
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend
 } from "recharts"
 
 import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
 import { Input } from "@/components/ui/input"
 import {
@@ -123,8 +122,6 @@ interface GenreInfo {
   avgMarginPct: number
 }
 
-const MAX_VISIBLE_ACTORS = 12 // 3 rijen x 4 kolommen (lg breakpoint)
-
 function formatBudget(value: number): string {
   if (value >= 1_000_000) {
     const m = value / 1_000_000
@@ -151,11 +148,7 @@ export default function CanaryDashboard() {
   // Data State
   const [masterCatalog, setMasterCatalog] = React.useState<MovieData[]>([])
   const [allActors, setAllActors] = React.useState<ActorInfo[]>([])
-  const [searchedActors, setSearchedActors] = React.useState<ActorInfo[] | null>(null)
   const [genreActors, setGenreActors] = React.useState<ActorInfo[] | null>(null)
-  const [isActorsLoading, setIsActorsLoading] = React.useState(true)
-  const [isSearchingActors, setIsSearchingActors] = React.useState(false)
-  const [isGenreActorsLoading, setIsGenreActorsLoading] = React.useState(false)
   const [genreStats, setGenreStats] = React.useState<GenreInfo[]>([])
   
   // Laad States
@@ -171,14 +164,12 @@ export default function CanaryDashboard() {
   const [budgetInputMax, setBudgetInputMax] = React.useState<string>(formatBudget(1_000_000_000))
   const prevCatalogKey = React.useRef<string>('')
   const [yearRange, setYearRange] = React.useState<number[]>([1970, 2026])
-  const [actorSearchQuery, setActorSearchQuery] = React.useState<string>("")
   const [filmSearchQuery, setFilmSearchQuery] = React.useState<string>("")
   const [sortField, setSortField] = React.useState<SortField>("winst")
   const [sortDirection, setSortDirection] = React.useState<SortDirection>("desc")
   const [filmPageSize, setFilmPageSize] = React.useState<number>(10)
   
   // UI State
-  const [chosenCast, setChosenCast] = React.useState<ActorInfo[]>([])
   const [selectedActorFilter, setSelectedActorFilter] = React.useState<ActorInfo | null>(null)
   const [actorMovies, setActorMovies] = React.useState<any[]>([])
   const [isActorMoviesLoading, setIsActorMoviesLoading] = React.useState(false)
@@ -226,7 +217,6 @@ export default function CanaryDashboard() {
 
   React.useEffect(() => {
     async function fetchActors() {
-      setIsActorsLoading(true);
       try {
         const actorsRes = await fetch('/api/actors');
         if (actorsRes.ok) {
@@ -234,39 +224,10 @@ export default function CanaryDashboard() {
         }
       } catch (error) {
         console.error("Fout bij ophalen acteurs:", error);
-      } finally {
-        setIsActorsLoading(false);
       }
     }
     fetchActors();
   }, []);
-
-  React.useEffect(() => {
-    const query = actorSearchQuery.trim();
-    if (query.length < 2) {
-      setSearchedActors(null);
-      setIsSearchingActors(false);
-      return;
-    }
-
-    const timeout = setTimeout(async () => {
-      setIsSearchingActors(true);
-      try {
-        const url = new URL('/api/actors', window.location.origin);
-        url.searchParams.set('search', query);
-        const res = await fetch(url.toString());
-        if (res.ok) {
-          setSearchedActors(await res.json());
-        }
-      } catch (error) {
-        console.error('Fout bij zoeken acteurs:', error);
-      } finally {
-        setIsSearchingActors(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timeout);
-  }, [actorSearchQuery]);
 
   React.useEffect(() => {
     if (!selectedGenre) {
@@ -277,7 +238,6 @@ export default function CanaryDashboard() {
     let cancelled = false;
 
     async function fetchGenreActors() {
-      setIsGenreActorsLoading(true);
       try {
         const url = new URL('/api/actors', window.location.origin);
         url.searchParams.set('genre', selectedGenre as string);
@@ -287,8 +247,6 @@ export default function CanaryDashboard() {
         }
       } catch (error) {
         console.error('Fout bij ophalen acteurs voor genre:', error);
-      } finally {
-        if (!cancelled) setIsGenreActorsLoading(false);
       }
     }
 
@@ -386,7 +344,6 @@ export default function CanaryDashboard() {
     setBudgetCeiling(1_000_000_000)
     setBudgetInputMax(formatBudget(1_000_000_000))
     setSelectedGenre(genre)
-    setActorSearchQuery("")
     setPopupContent(null)
     setShowMoreActors(false)
     setSelectedActorFilter(null)
@@ -402,29 +359,22 @@ export default function CanaryDashboard() {
     }
   }
 
-  const castPerformanceMultiplier = React.useMemo(() => {
-    if (chosenCast.length === 0) return 1.0
-    const totalScore = chosenCast.reduce((sum, actor) => sum + actor.score, 0)
-    const avgScore = totalScore / chosenCast.length
-    return 1.0 + (avgScore / 400)
-  }, [chosenCast])
-
   const rankedGenres = React.useMemo(() => {
     return genreStats
       .map((genre) => ({
         name: genre.name,
         titleCount: genre.titleCount,
-        value: Math.round(((genre.avgNetProfit * castPerformanceMultiplier) / 1_000_000) * 10) / 10,
+        value: Math.round((genre.avgNetProfit / 1_000_000) * 10) / 10,
       }))
       .sort((a, b) => b.value - a.value)
-  }, [genreStats, castPerformanceMultiplier])
+  }, [genreStats])
 
   const processedAnalytics = React.useMemo(() => {
     const verifiedCatalog = masterCatalog.map(item => {
-      let winstPercentage = Math.round((item.baseMarginFactor * 100) * castPerformanceMultiplier)
+      let winstPercentage = Math.round(item.baseMarginFactor * 100)
       const omzet = Math.round(item.budget * (1 + (winstPercentage / 100)))
       const nettoWinst = omzet - item.budget
-      
+
       return { ...item, winstPercentage, nettoWinst, isEligible: true }
     })
 
@@ -432,7 +382,7 @@ export default function CanaryDashboard() {
     const totalActive = finalRankedCatalog.length
 
     return { rankedMovies: finalRankedCatalog, titleCount: totalActive }
-  }, [masterCatalog, castPerformanceMultiplier])
+  }, [masterCatalog])
 
   const selectedGenreSummary = React.useMemo(() => {
     if (!selectedGenre) return null
@@ -504,32 +454,6 @@ export default function CanaryDashboard() {
     }
     return rankedActeursVoorContext[0] ?? null
   }, [rankedActeursVoorContext, selectedSuitableActorId])
-
-  const getoondeActeurs = React.useMemo(() => {
-    const query = actorSearchQuery.toLowerCase().trim()
-
-    let result: ActorInfo[]
-    if (query.length >= 2) {
-      const source = searchedActors ?? allActors.filter(a => a.name.toLowerCase().includes(query))
-      result = [...source].sort((a, b) => b.score - a.score)
-    } else if (selectedGenre) {
-      result = [...(genreActors ?? [])].sort((a, b) => b.score - a.score)
-    } else {
-      result = [...allActors].sort((a, b) => b.score - a.score)
-    }
-
-    return result.slice(0, MAX_VISIBLE_ACTORS)
-  }, [selectedGenre, actorSearchQuery, allActors, searchedActors, genreActors])
-
-  const toggleCastMember = (e: React.MouseEvent, actor: ActorInfo) => {
-    e.stopPropagation()
-    const exists = chosenCast.some(a => a.name === actor.name)
-    if (exists) {
-      setChosenCast(chosenCast.filter(a => a.name !== actor.name))
-    } else {
-      setChosenCast([...chosenCast, actor])
-    }
-  }
 
   const openContextPopup = (e: React.MouseEvent, type: "actor" | "director", data: ActorInfo | DirectorInfo) => {
     e.stopPropagation()
@@ -828,82 +752,6 @@ export default function CanaryDashboard() {
             </div>
           </div>
         )}
-
-        {/* Talent & Cast Selectie Rij */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-          <Card className="md:col-span-3 bg-white border-slate-200/80 shadow-sm rounded-3xl p-5 flex flex-col gap-2 transition-all duration-300">
-            <div className="flex justify-between items-center border-b border-slate-100 pb-2 shrink-0">
-              <div>
-                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5"><Users size={14} className="text-indigo-500" /> Acteurs</span>
-                <span className="text-[11px] text-slate-500 block mt-1">
-                  {isActorsLoading || (selectedGenre ? isGenreActorsLoading : false)
-                    ? "Talent laden..."
-                    : selectedGenre
-                      ? `Aanbevolen voor ${selectedGenre}`
-                      : "Top talent uit de database"}
-                  {isSearchingActors ? " · zoeken..." : ""}
-                </span>
-              </div>
-              <div className="relative w-48 group">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-                <Input type="text" placeholder="Zoek acteur..." value={actorSearchQuery} onChange={(e) => setActorSearchQuery(e.target.value)} className="pl-9 text-xs h-9 bg-slate-50/50 border-slate-200 rounded-xl focus-visible:ring-indigo-500/20 focus-visible:border-indigo-400 transition-all" />
-              </div>
-            </div>
-
-            {chosenCast.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 shrink-0 max-h-[36px] overflow-y-auto animate-in fade-in">
-                {chosenCast.map((actor) => (
-                  <Badge 
-                    key={actor.name} 
-                    variant="secondary"
-                    className="bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200/60 text-[11px] pl-1.5 pr-2 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
-                    onClick={(e) => toggleCastMember(e, actor)}
-                  >
-                    <div className="w-5 h-5 rounded-md bg-gradient-to-br from-indigo-500 to-indigo-600 text-white font-bold font-mono text-[9px] flex items-center justify-center shadow-inner overflow-hidden">
-                      <TmdbAvatar name={actor.name} initials={actor.initials} />
-                    </div>
-                    {actor.name}
-                    <X size={12} className="text-indigo-700 ml-0.5 opacity-70 hover:opacity-100" />
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 content-start">
-              {getoondeActeurs.length > 0 ? (
-                getoondeActeurs.map(acteur => {
-                  const isAdded = chosenCast.some(a => a.name === acteur.name)
-                  return (
-                    <div key={acteur.name} onClick={(e) => openContextPopup(e, "actor", acteur)} className={`flex justify-between p-2 border rounded-xl text-xs cursor-pointer group transition-all duration-200 ${isAdded ? 'border-indigo-400 bg-indigo-50/40 shadow-sm ring-1 ring-indigo-400/30' : 'bg-white hover:border-indigo-300 hover:shadow-sm'}`}>
-                      <div className="flex items-center gap-2.5 truncate">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-extrabold font-mono text-[10px] shrink-0 border transition-transform group-hover:scale-105 overflow-hidden ${isAdded ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-indigo-500' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                          <TmdbAvatar name={acteur.name} initials={acteur.initials} />
-                        </div>
-                        <div className="truncate">
-                          <p className="font-bold text-slate-800 truncate group-hover:text-indigo-700 transition-colors">{acteur.name}</p>
-                          <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{acteur.genre}</span>
-                        </div>
-                      </div>
-                      <button onClick={(e) => toggleCastMember(e, acteur)} className={`p-1.5 rounded-lg border transition-all active:scale-90 ${isAdded ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}>
-                        {isAdded ? <Check size={14} className="stroke-[3]" /> : <Plus size={14} className="stroke-[3]" />}
-                      </button>
-                    </div>
-                  )
-                })
-              ) : (
-                <div className="text-center p-4 text-[12px] text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 col-span-full">
-                  {isActorsLoading || (selectedGenre ? isGenreActorsLoading : false)
-                    ? "Acteurs laden uit de database..."
-                    : actorSearchQuery.trim().length >= 2
-                      ? "Geen acteurs gevonden voor deze zoekopdracht."
-                      : selectedGenre
-                        ? `Geen acteurs gevonden voor ${selectedGenre}.`
-                        : "Geen acteurs beschikbaar."}
-                </div>
-              )}
-            </div>
-          </Card>
-        </div>
 
         {/* Analytics & Grafieken Sectie */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
